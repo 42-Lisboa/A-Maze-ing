@@ -1,0 +1,4 @@
+pydantic
+mypy
+flake8
+pytest

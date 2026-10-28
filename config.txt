@@ -1,0 +1,12 @@
+# 🔑 Main Keys
+# --------------------------------------------------
+WIDTH=20
+HEIGHT=15
+ENTRY=0,15
+EXIT=20,0
+OUTPUT_FILE=maze.txt
+PERFECT=True
+
+# ⭐ Additional Keys
+# --------------------------------------------------
+SEED=13
