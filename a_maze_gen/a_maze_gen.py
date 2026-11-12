@@ -121,7 +121,7 @@ class MazeGenerator:
         """
         # 🔸 If is not 'None', we tell the function to use a seed
 
-        if self.seed:
+        if self.seed is not None:
             random.seed(self.seed)
 
         # 🔸 Create a compass ruler when moving each direction
@@ -181,8 +181,8 @@ class MazeGenerator:
                             break
                     if has_wall:
                         break
-            if not has_wall:
-                return True
+                if not has_wall:
+                    return True
         return False
 
     # =================== 6. Break extra walls on dead-ends ===================
@@ -207,20 +207,21 @@ class MazeGenerator:
 
         # 🔸 We check which walls to remove only from dead-end cells (3 walls)
 
-        walls_2_remove: list[tuple] = []
         blocked_cells = self.get_42_coords()
 
         for y, row in enumerate(self.grid):
             for x, cell in enumerate(row):
+                walls_2_remove: list[tuple] = []
+
                 if cell.bit_count() != 3:
                     continue
-                elif cell & NORTH == 1:
+                if cell & NORTH == 1:
                     walls_2_remove.append(compass[0])
-                elif cell & EAST == 2:
+                if cell & EAST == 2:
                     walls_2_remove.append(compass[1])
-                elif cell & SOUTH == 4:
+                if cell & SOUTH == 4:
                     walls_2_remove.append(compass[2])
-                elif cell & WEST == 8:
+                if cell & WEST == 8:
                     walls_2_remove.append(compass[3])
 
                 # 🔸 Now as soon one wall is validated we remove it
