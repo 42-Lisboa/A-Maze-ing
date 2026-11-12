@@ -126,9 +126,9 @@ class MazeRunner:
 
     # ========= 4. Method to export the generated maze to a .txt file =========
 
-    def export_maze(self):
+    def export_maze(self) -> None:
         """Exports the maze matrix, coords., and solution path to a file."""
-        if self.parsed_data:
+        if self.parsed_data and self.maze:
             try:
                 with open(self.parsed_data.output_file, 'w') as file:
                     for row in self.maze.grid:

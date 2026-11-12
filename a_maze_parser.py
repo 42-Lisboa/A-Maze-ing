@@ -1,4 +1,4 @@
-from pydantic import (  # type: ignore
+from pydantic import (
     BaseModel,
     Field,
     field_validator,

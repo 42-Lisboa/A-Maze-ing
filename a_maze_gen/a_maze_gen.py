@@ -127,7 +127,7 @@ class MazeGenerator:
         # 🔸 Create a compass ruler when moving each direction
         # (changer_x, changer_y, delete_wall_here, delete_wall_there)
 
-        compass: list[tuple] = [
+        compass: list[tuple[int, int, int, int]] = [
             (0, -1, NORTH, SOUTH),  # N rule
             (+1, 0, EAST, WEST),    # E rule
             (0, +1, SOUTH, NORTH),  # S rule
@@ -198,7 +198,7 @@ class MazeGenerator:
         # 🔸 Create a compass ruler when moving each direction
         # (changer_x, changer_y, delete_wall_here, delete_wall_there)
 
-        compass: list[tuple] = [
+        compass: list[tuple[int, int, int, int]] = [
             (0, -1, NORTH, SOUTH),  # N rule
             (+1, 0, EAST, WEST),    # E rule
             (0, +1, SOUTH, NORTH),  # S rule
@@ -211,7 +211,7 @@ class MazeGenerator:
 
         for y, row in enumerate(self.grid):
             for x, cell in enumerate(row):
-                walls_2_remove: list[tuple] = []
+                walls_2_remove: list[tuple[int, int, int, int]] = []
 
                 if cell.bit_count() != 3:
                     continue
