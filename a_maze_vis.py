@@ -161,6 +161,7 @@ class MazeVisualizer:
                 if hasattr(self.runner, 'parsed_data'):
                     self.runner.parsed_data.seed = random.randint(1, 999999)
                 self.runner.generate_maze()
+                self.runner.export_maze()
             elif choice == '2':
                 self.show_path = not self.show_path
             elif choice == '3':
@@ -170,6 +171,7 @@ class MazeVisualizer:
                 # Breaks extra walls to create loops and updates grid
                 self.runner.maze.break_extra_walls_de()
                 self.runner.maze.perfect = False
+                self.runner.export_maze()
             elif choice == '5':
                 print("\nClosing visualizer. Maze saved successfully!")
                 break
