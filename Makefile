@@ -10,7 +10,7 @@ FLAGS = \
 	--check-untyped-defs
 
 
-all: lint install
+all: install lint
 
 install:
 		uv sync
@@ -32,3 +32,6 @@ lint:
 lint-strict:
 		$(UV_RUN) -m flake8 *.py
 		$(UV_RUN) -m mypy *.py --strict
+
+
+.PHONY: install run debug clean lint lint-strict
