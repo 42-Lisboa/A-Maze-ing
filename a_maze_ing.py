@@ -1,6 +1,8 @@
 import sys
+import time
 from a_maze_parser import MazeParser, parse_config_file
 from a_maze_gen import MazeGenerator
+from a_maze_vis import MazeVisualizer
 from pydantic import ValidationError
 
 NORTH = 1 << 0  # Binary: 0001 (Decimal: 1)
@@ -10,10 +12,17 @@ WEST = 1 << 3  # Binary: 1000 (Decimal: 8)
 
 
 # =============================================================================
-#                               🗡️ MazeRunner 🗡️
+#                               ▶️ MazeRunner ▶️
 # -----------------------------------------------------------------------------
 
 class MazeRunner:
+    """Orchestrates maze parsing, generation, solving, and exporting.
+
+    Attributes:
+        config_file (str): Path to the configuration text file.
+        parsed_data (MazeParser | None): Validated configuration data.
+        maze (MazeGenerator | None): The maze generation engine instance.
+    """
     def __init__(self,
                  config_file: str,
                  parsed_data: MazeParser | None = None,
@@ -25,6 +34,11 @@ class MazeRunner:
     # ========= 1. Method to read config_file.txt and parse the data =========
 
     def load_config(self) -> MazeParser | None:
+        """Reads and validates the configuration file using Pydantic.
+
+        Returns:
+            MazeParser | None: The validated data object, or None if it fails.
+        """
         try:
             self.parsed_data = parse_config_file(self.config_file)
             return self.parsed_data
@@ -35,6 +49,12 @@ class MazeRunner:
     # ====== 2. Method to use the MazeGenerator object to build the maze ======
 
     def generate_maze(self) -> list[list[int]] | None:
+        """Instantiates the generator and carves the maze grid paths.
+
+        Returns:
+            list[list[int]] | None: The generated maze grid, or None if
+            missing data.
+        """
         if self.parsed_data:
             # .model_dump() pydantic method to transform the object into a dict
             self.maze = MazeGenerator(**self.parsed_data.model_dump())
@@ -53,6 +73,13 @@ class MazeRunner:
     # ============ 3. Method to solve the generated maze using BFS ============
 
     def solve_maze(self) -> str | None:
+        """Finds the shortest path from entry to exit using BFS: Breadth-First
+        Search.
+
+        Returns:
+            str | None: The solution path string (e.g., 'EESW'), or None if no
+            path.
+        """
         if self.maze:
 
             # 🔸 Save 42 blocked cells on visited and begin BFS maze search
@@ -100,6 +127,7 @@ class MazeRunner:
     # ========= 4. Method to export the generated maze to a .txt file =========
 
     def export_maze(self):
+        """Exports the maze matrix, coords., and solution path to a file."""
         if self.parsed_data:
             try:
                 with open(self.parsed_data.output_file, 'w') as file:
@@ -111,7 +139,7 @@ class MazeRunner:
                                f"\n{self.maze.maze_entry[0]},"
                                f"{self.maze.maze_entry[1]}      # entry (x,y)"
                                f"\n{self.maze.maze_exit[0]},"
-                               f"{self.maze.maze_exit[1]}      # exit  (x,y)")
+                               f"{self.maze.maze_exit[1]}       # exit  (x,y)")
                     path_trace_solution = self.solve_maze()
                     if path_trace_solution:
                         file.write(f"\n{path_trace_solution}\n")
@@ -122,26 +150,38 @@ class MazeRunner:
     # ===================== 5. Main Orchestration Method =====================
 
     def run(self) -> None:
-        """Orchestrates the entire execution flow of the MazeRunner."""
-        print("🚀 Starting MazeRunner...")
+        """Orchestrates the entire execution flow of the:
+                                                        ✅ MazeParser
+                                                        🧱 MazeGenerator
+                                                        ▶️ MazeRunner
+                                                        👾 MazeVisualizer."""
 
         # Load and validate configuration
+        print("✅ Starting MazeParser...")
         if not self.load_config():
             print("🛑 Execution stopped: Configuration failed.")
             return
-        print("✅ Configuration loaded successfully.")
+        print(" 🔹 Configuration loaded successfully.")
 
         # Generate the maze matrix and carve paths
+        print("🧱 Starting MazeGenerator...")
         if not self.generate_maze():
             print("🛑 Execution stopped: Maze generation failed.")
             return
-        print("✅ Maze generated.")
+        print(" 🔹 Maze generated.")
 
         # Export the maze to .txt (this internally calls solve_maze)
+        print("▶️  Starting MazeRunner...")
         self.export_maze()
         if self.parsed_data:
-            print("✅ Maze successfully saved to "
+            print(" 🔹 Maze successfully saved to "
                   f"'{self.parsed_data.output_file}'.")
+
+        # Now let's visualize all
+        print("👾 Starting MazeVisualizer...")
+        time.sleep(10)
+        visualizer = MazeVisualizer(runner=self)
+        visualizer.run()
 
 
 # ============================== Program Test ================================
