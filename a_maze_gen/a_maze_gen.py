@@ -35,6 +35,7 @@ class MazeGenerator:
         self.output_file = output_file
         self.perfect = perfect
         self.seed = seed
+        self.int_seed = random.Random(seed)
         self.grid: list[list[int]] = []
 
     # ================= 1. Create Maze with all cells closed =================
@@ -120,10 +121,6 @@ class MazeGenerator:
             start (tuple[int, int]): The (x, y) starting coordinates for the
             excavation.
         """
-        # 🔸 If is not 'None', we tell the function to use a seed
-
-        if self.seed is not None:
-            random.seed(self.seed)
 
         # 🔸 Create a compass ruler when moving each direction
         # (changer_x, changer_y, delete_wall_here, delete_wall_there)
@@ -143,7 +140,7 @@ class MazeGenerator:
         while stack:
             x, y = stack[-1]  # we unpack last cell from stack
             visited_cells.add((x, y))
-            random.shuffle(compass)
+            self.int_seed.shuffle(compass)
             for changer_x, changer_y, d_wall_here, d_wall_there in compass:
                 n_x = x + changer_x  # n - neighbor
                 n_y = y + changer_y  # n - neighbor
@@ -227,7 +224,7 @@ class MazeGenerator:
 
                 # 🔸 Now as soon one wall is validated we remove it
 
-                random.shuffle(walls_2_remove)
+                self.int_seed.shuffle(walls_2_remove)
                 for changer_x, changer_y, \
                         d_wall_here, d_wall_there in walls_2_remove:
                     n_y = y + changer_y  # n - neighbor
