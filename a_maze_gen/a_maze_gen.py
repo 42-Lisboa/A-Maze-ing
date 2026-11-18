@@ -37,6 +37,29 @@ class MazeGenerator:
         self.seed = seed
         self.int_seed = random.Random(seed)
         self.grid: list[list[int]] = []
+        self._validate()
+
+    # ================ 0. Simple validation to reusable module ================
+
+    def _validate(self) -> None:
+        """Checks the maze rules that the generator depends on.
+
+        Raises:
+            ValueError: If size, entry or exit are invalid.
+        """
+        if not (9 <= self.width <= 50 and 7 <= self.height <= 50):
+            raise ValueError("Size must be 9-50 (width) and 7-50 (height)")
+
+        blocked = self.get_42_coords()
+        for name, (x, y) in (("entry", self.maze_entry),
+                             ("exit", self.maze_exit)):
+            if not (0 <= x < self.width and 0 <= y < self.height):
+                raise ValueError(f"The {name} is outside the grid")
+            if (x, y) in blocked:
+                raise ValueError(f"The {name} is on a '42' cell")
+
+        if self.maze_entry == self.maze_exit:
+            raise ValueError("Entry and exit must be different")
 
     # ================= 1. Create Maze with all cells closed =================
 

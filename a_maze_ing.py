@@ -56,13 +56,13 @@ class MazeRunner:
             missing data.
         """
         if self.parsed_data:
-            # .model_dump() pydantic method to transform the object into a dict
-            self.maze = MazeGenerator(**self.parsed_data.model_dump())
+            try:
+                # .model_dump() pydantic method to transform object into a dict
+                self.maze = MazeGenerator(**self.parsed_data.model_dump())
+            except ValueError as e:
+                print(f"❌ Invalid maze settings: {e}")
+                return None
             return self.maze.generate()
-            if not self.maze.perfect:
-                self.maze.break_extra_walls_de()
-
-            return self.maze.grid
         else:
             # Return an empty grid (or raise an exception) if parsing failed
             print("❌ Cannot generate maze: Configuration data is missing.")
