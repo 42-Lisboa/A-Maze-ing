@@ -24,6 +24,7 @@
 - [Key Techniques](#key-techniques)
 - [General Rules](#general-rules)
 - [Concepts Learned](#concepts-learned)
+- [Team & Project Management](#team-and-project-management)
 - [Resources](#resources)
 
 ---
@@ -40,10 +41,15 @@
 | ▶️ | `MazeRunner` | `a_maze_ing.py` | Orchestrates the pipeline, solves the maze with BFS and exports it to a `.txt` file |
 | 👾 | `MazeVisualizer` | `a_maze_vis.py` | Draws the maze in the terminal with ANSI colours and runs the interactive menu |
 
-Two kinds of maze can be generated:
+Two kinds of maze can be generated, chosen with the `PERFECT` key:
 
-- **Perfect** (`PERFECT=True`) — exactly **one** path between any two cells, so exactly one way from the entry to the exit
-- **Imperfect** (`PERFECT=False`) — dead-ends are opened to create loops and **multiple** paths, without ever creating a 3×3 open area
+- **Perfect** (`PERFECT=True`): exactly **one** path between any two cells, so exactly one way from the entry to the exit and no loops at all
+- **Pac-Man board** (`PERFECT=False`, the default): a playable board, as the subject requires for the non-perfect mode:
+  - every free cell is reachable, so the whole board can be filled with pac-gums
+  - the four corners and the centre cell `((WIDTH-1)//2, (HEIGHT-1)//2)` are open corridors; the centre always falls on the free middle column of the "42"
+  - dead-ends are opened up to create **many independent loops**, for example 27 on the default 20×15 grid with `SEED=13` and 244 on a 50×50 grid
+  - the only dead-ends left are the **3 pockets inside the "42" glyph**. Pattern cells close them on three sides, so they cannot be opened
+  - no 3×3 open area is ever created
 
 
 <p align="right"><a href="#-summary">⬆ back to summary</a></p>
@@ -86,8 +92,8 @@ Every `uv` command in the Makefile runs with `UV_CACHE_DIR=.cache/uv`, so uv's d
 | `make debug` | `uv run python -m pdb a_maze_ing.py config.txt` | Runs the program inside the `pdb` debugger |
 | `make clean` | `rm -rf .mypy_cache` + `__pycache__/` folders | Removes the mypy cache and the Python bytecode caches |
 | `make fclean` | `clean` + `rm -rf maze.txt .venv .cache` | Also removes the generated maze, the virtual environment and the local uv cache |
-| `make lint` | `flake8` + `mypy` (with the subject's flags) | Style and type checks |
-| `make lint-strict` | `flake8` + `mypy --strict` | Stricter type checks |
+| `make lint` | `flake8 *.py` + `mypy *.py` (with the subject's flags) | Style and type checks on the root scripts; mypy also follows their imports into `a_maze_gen/` |
+| `make lint-strict` | `flake8 *.py` + `mypy *.py --strict` | Same, with stricter type checks |
 | `make build` | `uv build` | Builds the `mazegen` wheel and moves it to the repository root |
 
 ### What happens when you run it
@@ -112,6 +118,8 @@ After a 10-second pause, the interactive visualizer opens:
 | `4` | **Break dead-ends**: makes the current maze imperfect and rewrites the output file |
 | `5` | **Quit** |
 
+Any other input simply redraws the maze. Option `1` keeps the `PERFECT` mode of the config file; option `4` can be used on top of it to turn a perfect maze into a Pac-Man board.
+
 | Element | Look in the terminal |
 |---------|----------------------|
 | Walls | `██` in the current palette colour |
@@ -126,7 +134,8 @@ After a 10-second pause, the interactive visualizer opens:
 |-----------|-----------|
 | Wrong number of arguments | Prints the usage line and exits with status `1` |
 | Config file cannot be opened | Prints the `OSError` and stops before generating anything |
-| Invalid config value | Prints the Pydantic `ValidationError` with the reason, then stops |
+| Invalid or missing config value | Prints the Pydantic `ValidationError` with the reason, then stops |
+| Settings rejected by `MazeGenerator` | Prints `❌ Invalid maze settings: ...` and stops (the parser normally catches these first) |
 | Output file cannot be written | Prints the `OSError` without crashing |
 
 <p align="right"><a href="#-summary">⬆ back to summary</a></p>
@@ -162,7 +171,9 @@ The config file is plain text with **one `KEY=VALUE` pair per line**:
 
 - Lines starting with `#` are comments and are ignored
 - Lines without `=` are ignored, so blank lines are fine
+- Each setting line holds exactly one `=`
 - Spaces around keys and values are trimmed
+- Keys are case-sensitive and written in uppercase. Unknown keys are ignored, and if a key appears twice the last value wins
 
 Default `config.txt`:
 
@@ -188,14 +199,15 @@ SEED=13
 | `ENTRY` | ✅ | `x,y` | Inside the grid, different from `EXIT`, not on the "42" pattern | `0,14` |
 | `EXIT` | ✅ | `x,y` | Inside the grid, different from `ENTRY`, not on the "42" pattern | `19,0` |
 | `OUTPUT_FILE` | ✅ | file name | Must end with `.txt`; spaces are removed | `maze.txt` |
-| `PERFECT` | ❌ (falls back to `False`) | boolean | `True` → one single path; `False` → loops are added | `True` |
-| `SEED` | ❌ (falls back to random) | integer | The same seed always gives the same maze | `13` |
+| `PERFECT` | ✅ in the subject (falls back to `False` if omitted) | boolean | `True` → one single path; `False` → Pac-Man board with loops | `True` |
+| `SEED` | ❌ extra key (falls back to random) | integer | The same seed always gives the same maze | `13` |
 
 Notes:
 
 - Coordinates are `x,y`: `x` is the column (`0` = left) and `y` is the row (`0` = top). Spaces such as `0, 14` are accepted, negative values are rejected
-- The minimum size of **9×7** guarantees that the 7×5 "42" pattern fits inside the maze with a border of free cells around it
-- `PERFECT` accepts any boolean Pydantic understands: `True`/`False`, `true`/`false`, `1`/`0`, `yes`/`no`…
+- The minimum size of **9×7** guarantees that the 7×5 "42" pattern fits inside the maze with a border of free cells around it. The subject allows the "42" to be left out of mazes that are too small, as long as an error message is printed. This project rejects sizes below 9×7 in the parser instead, so every generated maze contains the "42"
+- `PERFECT` accepts any boolean Pydantic understands: `True`/`False`, `true`/`false`, `1`/`0`, `yes`/`no`, `on`/`off`
+- `SEED` accepts any integer, negative values included
 
 <p align="right"><a href="#-summary">⬆ back to summary</a></p>
 </details>
@@ -216,7 +228,7 @@ Each cell is written as **one hexadecimal digit**, one line per row. Every bit s
 
 Examples: `f` (`1111`) is a fully closed cell, like every "42" cell; `d` (`1101`) has North, South and West closed and only East open.
 
-After the grid and an empty line, the file holds the **entry**, the **exit** and the **shortest path** as a string of `N`, `E`, `S`, `W` moves. Output of the default `config.txt`:
+After the grid and an empty line, the file holds the **entry**, the **exit** and the **shortest path** as a string of `N`, `E`, `S`, `W` moves, one per line. Every line ends with `\n`. The entry and exit lines carry an inline `# entry (x,y)` / `# exit  (x,y)` label, following the output example shown in the subject. Output of the default `config.txt`:
 
 ```
 d1155579551553d55553
@@ -256,15 +268,20 @@ NENWNNESESSENNEEEESWWSWSEENESEENENNENESSWSEESEEEEEENNWNNWSSSWWNNWWNEEENNENNNENWW
    - look at the cell on top of the stack and shuffle the compass (`N`, `E`, `S`, `W`)
    - for the first unvisited neighbour inside the grid, remove the wall on **both** sides (`& ~wall`) and push the neighbour
    - if there is no unvisited neighbour left (`for ... else`), pop the cell and backtrack
-4. **Imperfect mode** (`PERFECT=False`) — `break_extra_walls_de()` looks for dead-ends (cells with exactly 3 walls, `bit_count() == 3`) and removes one random wall towards a valid neighbour. If `has_3x3_pool()` finds a 3×3 open area, the wall is rebuilt and another one is tried
+4. **Pac-Man mode** (`PERFECT=False`): `break_extra_walls_de()` looks for dead-ends (cells with exactly 3 walls, `bit_count() == 3`) and removes one random wall towards a neighbour that is inside the grid and not part of the "42". If `has_3x3_pool()` then finds a 3×3 open area, the wall is rebuilt and another one is tried
+
+`generate()` runs these steps in one call and respects the `PERFECT` flag. Every random choice (DFS direction order, which dead-end wall to open) comes from the generator's private `random.Random(SEED)`.
 
 The DFS visits every free cell once and opens one wall per new cell, so the result is a **spanning tree**: every cell is reachable and there is exactly one path between any two cells, which is a perfect maze.
+
+Breaking dead-ends only **adds** openings to that tree, so connectivity is kept and every opened wall closes a loop. On a test run of 278 random configurations (all sizes from 9×7 to 50×50, random seeds, entries and exits), the Pac-Man boards never had a dead-end outside the 3 "42" pockets, never had a 3×3 open area, and each one took under 0.1 s to generate.
 
 ### Why DFS?
 
 - **Perfect by construction** — no extra check is needed to guarantee a single path and full connectivity
 - **Long, winding corridors** — DFS goes as deep as it can before backtracking, which gives harder, better-looking mazes than algorithms that produce many short dead-ends
-- **Simple to make reproducible** — one `random.seed(SEED)` call before digging gives the same maze every time
+- **Simple to make reproducible**: each `MazeGenerator` owns a private `random.Random(SEED)`, so the same seed always gives the same maze. Other code that uses the global `random` module, like the visualizer drawing a new seed, cannot disturb it
+- **A good base for the Pac-Man board**: a spanning tree is already fully connected, so opening its dead-ends is enough to get loops without ever isolating a cell
 - **Iterative, not recursive** — an explicit stack avoids Python's recursion limit (a 50×50 maze has 2,500 cells, while the default limit is 1,000 frames)
 - **Pairs naturally with BFS** — the two graph traversals were studied together, and BFS is the right tool for the solver
 
@@ -292,10 +309,23 @@ The generator lives in its own package, `a_maze_gen`, so it can be reused in oth
 
 ### Build and install
 
+With the Makefile (uv):
+
 ```bash
 make build                                      # creates mazegen-0.1.0-py3-none-any.whl at the repo root (also run by `make`)
 pip install mazegen-0.1.0-py3-none-any.whl      # or: uv add ./mazegen-0.1.0-py3-none-any.whl
 ```
+
+Or from scratch in a fresh virtual environment, with only the standard Python build tools:
+
+```bash
+python3 -m venv venv && . venv/bin/activate
+pip install build
+python -m build                                 # dist/mazegen-0.1.0-py3-none-any.whl and dist/mazegen-0.1.0.tar.gz
+pip install dist/mazegen-0.1.0-py3-none-any.whl
+```
+
+Everything the build needs is in the repository: `pyproject.toml` (setuptools backend), `a_maze_gen/`, `a_maze_gen/README.md` and `LICENSE.md`.
 
 ### Basic usage
 
@@ -308,30 +338,63 @@ maze = MazeGenerator(
     maze_entry=(0, 14),
     maze_exit=(19, 0),
     output_file="maze.txt",
-    perfect=True,
+    perfect=True,       # False -> Pac-Man board with loops (default)
     seed=42,            # same seed -> same maze; None -> random
 )
 
-maze.create_closed_cells()               # 1. every wall closed
-maze.maze_digger(start=maze.maze_entry)  # 2. dig with DFS
-if not maze.perfect:
-    maze.break_extra_walls_de()          # 3. optional: add loops
+grid = maze.generate()          # closed grid -> DFS -> loops if perfect=False
 
-print(maze.grid[0][0])          # bitmask of the top-left cell (N=1, E=2, S=4, W=8)
+print(grid[0][0])               # bitmask of the top-left cell (N=1, E=2, S=4, W=8)
 print(maze.get_42_coords())     # set of (x, y) cells used by the "42" pattern
+```
+
+Invalid parameters raise a `ValueError`:
+
+```python
+try:
+    MazeGenerator(width=5, height=5, maze_entry=(0, 0), maze_exit=(4, 4), output_file="maze.txt")
+except ValueError as error:
+    print(error)                # Size must be 9-50 (width) and 7-50 (height)
+```
+
+### Access a solution
+
+The package returns the maze structure; a shortest path is a short BFS over `grid`. This is the same algorithm as `MazeRunner.solve_maze()` in `a_maze_ing.py`:
+
+```python
+from collections import deque
+from a_maze_gen.a_maze_gen import NORTH, EAST, SOUTH, WEST
+
+def solve(maze: MazeGenerator) -> str | None:
+    moves = [(NORTH, 0, -1, "N"), (EAST, 1, 0, "E"), (SOUTH, 0, 1, "S"), (WEST, -1, 0, "W")]
+    visited = {maze.maze_entry}
+    queue = deque([(maze.maze_entry, "")])
+    while queue:
+        (x, y), path = queue.popleft()
+        if (x, y) == maze.maze_exit:
+            return path
+        for wall, dx, dy, letter in moves:
+            nxt = (x + dx, y + dy)
+            if not maze.grid[y][x] & wall and nxt not in visited:
+                visited.add(nxt)
+                queue.append((nxt, path + letter))
+    return None
+
+print(solve(maze))              # "ENWNNENEESESESSEENEEEE...": the moves from entry to exit
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `width`, `height` | `int` | Grid size in cells |
-| `maze_entry`, `maze_exit` | `tuple[int, int]` | `(x, y)` coordinates |
-| `output_file` | `str` | Output file name, kept for the exporter |
-| `perfect` | `bool` | `True` for a single path, `False` to add loops (default `False`) |
+| `width`, `height` | `int` | Grid size in cells: `9 ≤ width ≤ 50`, `7 ≤ height ≤ 50` |
+| `maze_entry`, `maze_exit` | `tuple[int, int]` | `(x, y)` coordinates: inside the grid, different, not on the "42" |
+| `output_file` | `str` | Output file name, only stored for the caller's exporter |
+| `perfect` | `bool` | `True` for a single path, `False` for a Pac-Man board with loops (default `False`) |
 | `seed` | `int \| None` | Random seed for reproducible mazes (default `None`) |
 
-| Method | Description |
-|--------|-------------|
-| `create_closed_cells()` | Fills `grid` with fully closed cells (`15`) |
+| Method / attribute | Description |
+|--------------------|-------------|
+| `generate()` | Builds the whole maze in one call, respecting `perfect`, and returns `grid` |
+| `create_closed_cells()` | Resets `grid` to fully closed cells (`15`) |
 | `maze_digger(start)` | Digs the paths with an iterative DFS from `start` |
 | `break_extra_walls_de()` | Opens dead-ends to create loops, without making 3×3 pools |
 | `has_3x3_pool()` | `True` if the grid contains a 3×3 open area |
@@ -340,9 +403,9 @@ print(maze.get_42_coords())     # set of (x, y) cells used by the "42" pattern
 
 Notes:
 
-- `MazeGenerator` does **not** validate its inputs; validate them first (e.g. with `MazeParser`)
-- Use a **new instance** for every maze: `create_closed_cells()` appends rows to `grid`
-- The BFS solver is `MazeRunner.solve_maze()` in `a_maze_ing.py`, outside the package
+- `MazeGenerator` validates its own inputs. The A-Maze-ing program still validates the config file first with `MazeParser`, to give clearer error messages
+- Reproducibility is **per instance**: the private random generator keeps its state, so a second `generate()` call on the same object gives a different maze. Create a new instance to rebuild a maze from its seed
+- The full package documentation, with more examples, is in [`a_maze_gen/README.md`](a_maze_gen/README.md); it is also embedded in the wheel
 
 <p align="right"><a href="#-summary">⬆ back to summary</a></p>
 </details>
@@ -357,7 +420,7 @@ Notes:
 - **Iterative DFS with a stack** — `stack[-1]` to peek, `append()` to go deeper, `pop()` to backtrack (generator)
 - **`for ... else`** — the `else` block runs only when no neighbour triggered a `break`, which is exactly the backtrack case (generator)
 - **Compass table** — `(dx, dy, wall_here, wall_there)` tuples remove the shared wall on both cells in a single loop (generator)
-- **`random.seed()` + `random.shuffle()`** — random but reproducible digging order (generator)
+- **`random.Random(seed)` + `.shuffle()`**: a private, seeded random generator per maze gives a random but reproducible digging order (generator)
 - **BFS with a queue** — stores `(cell, path_trace)` pairs so the path is built while searching (runner)
 - **Pydantic `BaseModel`** — `Field(ge=..., le=..., alias="WIDTH")` maps config keys to typed, bounded attributes (parser)
 - **`@field_validator(mode="before")`** — turns the raw `"x,y"` string into a `tuple[int, int]` before type checking (parser)
@@ -388,6 +451,7 @@ Notes:
 - Corridors can't be wider than 2 cells: **no 3×3 open area**
 - The maze must show a **"42"** drawn with fully closed cells
 - `PERFECT=True` means **exactly one path** between the entry and the exit
+- `PERFECT=False` (the default) means a **Pac-Man board**: full connectivity, open corners and centre, at least two independent loops and very few dead-ends
 - The output file uses **one hexadecimal digit per cell**, followed by the entry, the exit and the shortest path
 - The generation logic must be a **reusable module**, packaged as `mazegen-*` at the root of the repository
 
@@ -415,6 +479,62 @@ Notes:
 
 ---
 
+<a name="team-and-project-management"></a>
+<details open><summary><h2>👥 Team & Project Management</h2></summary>
+
+### Team and roles
+
+| Member | Role |
+|--------|------|
+| `jcosta-a` | Solo project: design, parser, generator, solver, visualizer, packaging and documentation |
+
+### Planning and how it evolved
+
+The plan followed the order of the pipeline, one class at a time. The parser and the generator each have a small `if __name__ == "__main__":` test block, so each stage could be checked on its own:
+
+1. **Parser**: read `config.txt` and validate every key with Pydantic
+2. **Generator**: closed grid, "42" pattern and DFS digger, then the dead-end breaker and the 3×3 check for `PERFECT=False`
+3. **Runner**: BFS solver and the hexadecimal export
+4. **Visualizer**: ANSI rendering and the interactive menu
+5. **Packaging**: `pyproject.toml`, `uv build` and the `mazegen` wheel
+
+How it evolved (see the Git history):
+
+- The `PERFECT` flag was first handled inside `MazeRunner`. It moved into a single `MazeGenerator.generate()` call, so the reusable module builds the right kind of maze on its own
+- Re-generating a maze from the menu exposed a seed bug with the global `random` module. Each generator now owns a private `random.Random(seed)`
+- `MazeGenerator` gained its own input validation (`ValueError`), so it is safe to use without the parser
+- The Makefile gained `fclean`, `build` and a project-local uv cache, and `pyproject.toml` gained a build backend and license metadata
+
+### What worked well
+
+- Four single-responsibility classes made each stage easy to test and debug on its own
+- Validating the config with Pydantic at the edge of the program means the generator and the solver can trust their data
+- Starting from a perfect DFS maze and then breaking dead-ends: connectivity is guaranteed, and the board has no dead-ends apart from the 3 pockets inside the "42"
+
+### What could be improved
+
+- The BFS solver lives in `MazeRunner`. Moving it into `MazeGenerator` would let the `mazegen` package return a solution on its own
+- Only one generation algorithm; Prim's or Kruskal's could be offered through an `ALGORITHM` key
+- The fixed 10-second pause before the visualizer could become a "press Enter to continue"
+- An MLX graphical display could be offered as an alternative to the terminal
+
+### Tools
+
+| Tool | Used for |
+|------|----------|
+| [uv](https://docs.astral.sh/uv/) | Virtual environment, dependencies, running and building the wheel |
+| [Pydantic](https://docs.pydantic.dev) | Validating the config file |
+| flake8 / mypy | Style and static type checks (`make lint`, `make lint-strict`) |
+| pdb | Debugging (`make debug`) |
+| Git | Version control |
+| `ver_cores.py` | Previewing the 256 ANSI colours to pick the palette |
+| Claude (Anthropic) | See [AI Usage](#ai-usage) |
+
+<p align="right"><a href="#-summary">⬆ back to summary</a></p>
+</details>
+
+---
+
 <a name="resources"></a>
 <details open><summary><h2>🔗 Resources</h2></summary>
 
@@ -429,9 +549,18 @@ Notes:
 | [Validators — Pydantic Docs](https://docs.pydantic.dev/latest/concepts/validators/) | [Pydantic](https://docs.pydantic.dev) | Official reference for `field_validator` and `model_validator`, used to validate the config file. |
 | [ANSI escape code](https://en.wikipedia.org/wiki/ANSI_escape_code) | [Wikipedia](https://en.wikipedia.org) | Reference for the colour and cursor codes used by the terminal visualizer. |
 
+<a name="ai-usage"></a>
+
 ### 🤖 AI Usage
 
-- This README was drafted with **Claude** (Anthropic) from the project's source code, config file and the resources above, then reviewed by the team
+**Claude** (Anthropic) was used for the following tasks:
+
+| Task | Part of the project | How the result was checked |
+|------|---------------------|----------------------------|
+| Drafting and updating this README and [`a_maze_gen/README.md`](a_maze_gen/README.md) | Documentation | Every command and example was re-run against the current code, and the outputs shown are the real outputs |
+| Reviewing the project against the subject | Whole repository | Findings were confirmed by running the program, both linters, the package build and an independent output-file checker |
+
+All AI-generated content was reviewed, and the author can explain every part of it, as the subject requires.
 
 <p align="right"><a href="#-summary">⬆ back to summary</a></p>
 </details>
