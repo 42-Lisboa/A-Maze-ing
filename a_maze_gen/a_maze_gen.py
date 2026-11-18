@@ -48,6 +48,7 @@ class MazeGenerator:
         Returns:
             list[list[int]]: The generated 2D grid matrix.
         """
+        self.grid = []
         for _ in range(self.height):
             current_row: list[int] = []
             self.grid.append(current_row)
@@ -249,6 +250,23 @@ class MazeGenerator:
                         else:
                             break
 
+    # ================= 7. Build the whole maze in one call =================
+
+    def generate(self) -> list[list[int]]:
+        """Builds the complete maze respecting the 'perfect' flag.
+
+        Closes all cells, digs the maze with DFS and, if 'perfect' is
+        False, breaks the dead-ends to create loops.
+
+        Returns:
+            list[list[int]]: The generated 2D grid matrix.
+        """
+        self.create_closed_cells()
+        self.maze_digger(start=self.maze_entry)
+        if not self.perfect:
+            self.break_extra_walls_de()
+        return self.grid
+
 
 # ============================== Program Test ================================
 
@@ -271,21 +289,17 @@ if __name__ == "__main__":
         seed=13
     )
 
-    # 2. Executing the generation pipeline step by step
-    print("🧱 Initializing closed grid...")
-    maze.create_closed_cells()
+    # 2. Executing the whole generation pipeline in one call
+    print("🧱 Generating maze (closed grid + DFS + dead-ends)...")
+    maze.generate()
     print(f"Grid created: {len(maze.grid)} rows by "
           f"{len(maze.grid[0])} columns.\n")
 
-    print("⛏️  Digging the perfect maze (DFS)...")
-    maze.maze_digger(start=maze.maze_entry)
-    print("DFS digging completed.\n")
-
-    if not maze.perfect:
-        print("🔨 PERFECT=False detected. Breaking extra "
-              "walls to remove dead-ends...")
-        maze.break_extra_walls_de()
-        print("Extra walls removed without creating pools!\n")
+    if maze.perfect:
+        print("💎 PERFECT=True detected. Maze has a single path.\n")
+    else:
+        print("🔨 PERFECT=False detected. Extra walls were broken "
+              "to remove dead-ends without creating pools!\n")
 
     print("✅ Maze generation logic executed successfully!")
 

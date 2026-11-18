@@ -58,9 +58,7 @@ class MazeRunner:
         if self.parsed_data:
             # .model_dump() pydantic method to transform the object into a dict
             self.maze = MazeGenerator(**self.parsed_data.model_dump())
-
-            self.maze.create_closed_cells()
-            self.maze.maze_digger(start=self.maze.maze_entry)
+            return self.maze.generate()
             if not self.maze.perfect:
                 self.maze.break_extra_walls_de()
 
