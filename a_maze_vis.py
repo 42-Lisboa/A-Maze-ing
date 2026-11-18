@@ -34,14 +34,15 @@ class MazeVisualizer:
 
         # ANSI color palette for the walls
         self.colors = [
-            '\033[97m', '\033[38;5;135m',        # White, Purple
+            '\033[97m', '\033[38;5;135m',       # White, Purple
             '\033[38;5;50m', '\033[38;5;39m',   # Turmaline, Blue
             '\033[38;5;218m', '\033[38;5;215m'  # Rose, Soft orange
         ]
         # Solid Block Colors for specific elements
-        self.entry_c = '\033[92m'  # Green for Entry
-        self.exit_c = '\033[91m'   # Red for Exit
-        self.path_c = '\033[93m'   # Bright Yellow for Path
+        self.entry_c = '\033[92m'       # Green for Entry
+        self.exit_c = '\033[91m'        # Red for Exit
+        self.menu_c = '\033[38;5;39m'   # Blue for the menu
+        self.quit_c = '\033[38;5;35m'   # Green for Quit
 
         # Colors for the "42" pattern
         self.pattern_42_c = '\033[38;5;226m'       # BR Yellow (walls)
@@ -108,7 +109,7 @@ class MazeVisualizer:
             path_str = self.runner.solve_maze()
             if path_str:
                 px, py = entry
-                path_block = f"{self.path_c}🔸{self.reset_c}"
+                path_block = "🔸"
                 for move in path_str:
                     if move == 'N':
                         vis[py * 2][px * 2 + 1] = path_block      # Carved wall
@@ -147,13 +148,13 @@ class MazeVisualizer:
             self._clear_screen()
             self._draw_maze()
 
-            print(f"\n{'\033[38;5;39m'}"
+            print(f"\n{self.menu_c}"
                   f"{'1. Re-generate a new maze'.ljust(col)}"
                   "2. Show / Hide the shortest path")
             print(f"{'3. Rotate the wall colours'.ljust(col)}"
                   "4. Break dead-ends (Make it imperfect)")
 
-            choice = input(f"{'\033[38;5;35m'}{'5. Quit'.ljust(col)}"
+            choice = input(f"{self.quit_c}{'5. Quit'.ljust(col)}"
                            f"{self.reset_c}Choice? (1-5): ").strip()
 
             if choice == '1':
