@@ -23,7 +23,7 @@ debug:
 
 clean:
 		rm -rf $(ARTIFACTS)
-		find . -name "__pycache__" -type d -prune -exec rm -rf {} +
+		find . -type d -name "__pycache__" -exec rm -rf {} +
 
 lint:
 		$(UV_RUN) -m flake8 *.py
@@ -33,5 +33,11 @@ lint-strict:
 		$(UV_RUN) -m flake8 *.py
 		$(UV_RUN) -m mypy *.py --strict
 
+build:
+		uv build
+		mv dist/*.whl .
+		rm -rf dist/
+		rm -rf *.egg-info/
 
-.PHONY: install run debug clean lint lint-strict
+
+.PHONY: install run debug clean lint lint-strict build
