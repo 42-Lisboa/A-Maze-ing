@@ -30,12 +30,12 @@ fclean: clean
 		rm -rf $(ARTIFACTS)
 
 lint:
-		$(UV_RUN) -m flake8 *.py
-		$(UV_RUN) -m mypy *.py $(FLAGS)
+		$(UV_RUN) -m flake8 .
+		$(UV_RUN) -m mypy . $(FLAGS)
 
 lint-strict:
-		$(UV_RUN) -m flake8 *.py
-		$(UV_RUN) -m mypy *.py --strict
+		$(UV_RUN) -m flake8 .
+		$(UV_RUN) -m mypy . --strict
 
 build:
 		$(UV_CACHE_PREFIX) uv build

@@ -9,14 +9,13 @@ license = "MIT"
 license-files = ["LICENSE.md"]
 readme = "a_maze_gen/README.md"
 requires-python = ">=3.10"
-dependencies = [
-    "pydantic>=2.14.3",
-]
+dependencies = []
 
 [dependency-groups]
 dev = [
     "flake8>=7.4.0",
     "mypy>=2.4.1",
+    "pydantic>=2.14.3"
 ]
 
 [tool.setuptools]

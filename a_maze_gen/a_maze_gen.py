@@ -47,8 +47,8 @@ class MazeGenerator:
         Raises:
             ValueError: If size, entry or exit are invalid.
         """
-        if not (9 <= self.width <= 50 and 7 <= self.height <= 50):
-            raise ValueError("Size must be 9-50 (width) and 7-50 (height)")
+        if not (2 <= self.width <= 50 and 2 <= self.height <= 50):
+            raise ValueError("Size must be 2-50 (width) and 2-50 (height)")
 
         blocked = self.get_42_coords()
         for name, (x, y) in (("entry", self.maze_entry),
@@ -89,6 +89,10 @@ class MazeGenerator:
             set[tuple[int, int]]: A set of (x, y) coordinates from the '42'.
         """
         pattern_width, pattern_height = 7, 5
+
+        # Too small for the "42" plus a 1-cell border: omit the pattern
+        if self.width < 9 or self.height < 7:
+            return set()
 
         start_x_pattern = (self.width - pattern_width) // 2
         start_y_pattern = (self.height - pattern_height) // 2
@@ -287,6 +291,60 @@ class MazeGenerator:
             self.break_extra_walls_de()
         return self.grid
 
+    # ============ 8. Method to solve the generated maze using BFS ============
+
+    def solve(self) -> str | None:
+        """Finds the shortest path from entry to exit using BFS: Breadth-First
+        Search.
+
+        Returns:
+            str | None: The solution path string (e.g., 'EESW'), or None if no
+            path.
+        """
+        if self.grid:
+
+            # 🔸 Save 42 blocked cells on visited and begin BFS maze search
+            visited_cells = self.get_42_coords()
+            queue = [(self.maze_entry, "")]  # coords + path trace
+
+            while queue:
+
+                # 🔸 Pop a cell from the front of queue and check if it's exit
+                cell = queue.pop(0)
+                if cell[0] == self.maze_exit:
+                    return cell[1]  # returns the path trace
+
+                # 🔸 Unpack cell so we can calculate neighbors coords
+                x, y = cell[0]
+                path_trace = cell[1]
+
+                # 🔸 For each open direction we add neighbors coords + trace
+                if (self.grid[y][x] & NORTH) == 0:
+                    n_cell = (x, y - 1)
+                    if n_cell not in visited_cells:
+                        visited_cells.add(n_cell)
+                        queue.append((n_cell, path_trace + "N"))
+
+                if (self.grid[y][x] & EAST) == 0:
+                    n_cell = (x + 1, y)
+                    if n_cell not in visited_cells:
+                        visited_cells.add(n_cell)
+                        queue.append((n_cell, path_trace + "E"))
+
+                if (self.grid[y][x] & SOUTH) == 0:
+                    n_cell = (x, y + 1)
+                    if n_cell not in visited_cells:
+                        visited_cells.add(n_cell)
+                        queue.append((n_cell, path_trace + "S"))
+
+                if (self.grid[y][x] & WEST) == 0:
+                    n_cell = (x - 1, y)
+                    if n_cell not in visited_cells:
+                        visited_cells.add(n_cell)
+                        queue.append((n_cell, path_trace + "W"))
+
+        return None
+
 
 # ============================== Program Test ================================
 
@@ -312,6 +370,7 @@ if __name__ == "__main__":
     # 2. Executing the whole generation pipeline in one call
     print("🧱 Generating maze (closed grid + DFS + dead-ends)...")
     maze.generate()
+    print(f"Solution: {maze.solve()}")
     print(f"Grid created: {len(maze.grid)} rows by "
           f"{len(maze.grid[0])} columns.\n")
 

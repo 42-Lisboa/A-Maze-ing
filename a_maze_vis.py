@@ -174,5 +174,6 @@ class MazeVisualizer:
                 self.runner.maze.perfect = False
                 self.runner.export_maze()
             elif choice == '5':
-                print("\nClosing visualizer. Maze saved successfully!")
+                print("\n ======================== Closing visualizer. Bye! "
+                      "========================")
                 break

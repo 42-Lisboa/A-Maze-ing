@@ -21,8 +21,8 @@ class MazeParser(BaseModel):
         perfect (bool): True for a perfect maze, False for a playable board.
         seed (int): The seed used for random maze generation.
     """
-    width: int = Field(ge=9, le=50, alias="WIDTH")
-    height: int = Field(ge=7, le=50, alias="HEIGHT")
+    width: int = Field(ge=2, le=50, alias="WIDTH")
+    height: int = Field(ge=2, le=50, alias="HEIGHT")
     maze_entry: tuple[int, int] = Field(alias="ENTRY")
     maze_exit: tuple[int, int] = Field(alias="EXIT")
     output_file: str = Field(alias="OUTPUT_FILE")
@@ -74,6 +74,10 @@ class MazeParser(BaseModel):
             set[tuple[int, int]]: A set of (x, y) blocked coordinates.
         """
         pattern_width, pattern_height = 7, 5
+
+        # Too small for the "42" plus a 1-cell border: omit the pattern
+        if self.width < 9 or self.height < 7:
+            return set()
 
         start_x_pattern = (self.width - pattern_width) // 2
         start_y_pattern = (self.height - pattern_height) // 2
@@ -186,11 +190,11 @@ def parse_config_file(file_name: str) -> MazeParser | None:
             config_keys: dict[str, str] = {}
             for line in config_txt_lines:
                 if not line.startswith('#') and '=' in line:
-                    key, value = line.split('=')
+                    key, value = line.split('=', 1)
                     config_keys[key.strip()] = value.strip()  # - extra spaces
             return MazeParser(**config_keys)  # type: ignore
 
-    except OSError as e:  # Operating System Error
+    except (OSError, UnicodeDecodeError) as e:  # Operating System Error
         print(f"Error opening file '{file_name}': {e}")
         return None
 
